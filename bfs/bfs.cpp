@@ -32,25 +32,34 @@ void top_down_step(
     int* distances)
 {
 
-    for (int i=0; i<frontier->count; i++) {
+    #pragma omp parallel
+    {
+        int count = 0;
+        int *local_set = (int *)malloc(sizeof(int) * (g->num_nodes));
 
-        int node = frontier->vertices[i];
+        #pragma omp for schedule(guided)
+        for (int i=0; i<frontier->count; i++) {
 
-        int start_edge = g->outgoing_starts[node];
-        int end_edge = (node == g->num_nodes - 1)
-                           ? g->num_edges
-                           : g->outgoing_starts[node + 1];
+            int node = frontier->vertices[i];
 
-        // attempt to add all neighbors to the new frontier
-        for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
-            int outgoing = g->outgoing_edges[neighbor];
+            int start_edge = g->outgoing_starts[node];
+            int end_edge = (node == g->num_nodes - 1)
+                            ? g->num_edges
+                            : g->outgoing_starts[node + 1];
 
-            if (distances[outgoing] == NOT_VISITED_MARKER) {
-                distances[outgoing] = distances[node] + 1;
-                int index = new_frontier->count++;
-                new_frontier->vertices[index] = outgoing;
+            // attempt to add all neighbors to the new frontier
+            for (int neighbor=start_edge; neighbor<end_edge; neighbor++) {
+                int outgoing = g->outgoing_edges[neighbor];
+
+                if (__sync_bool_compare_and_swap(&distances[outgoing], NOT_VISITED_MARKER, distances[node] + 1)) {
+                    local_set[count++] = outgoing;
+                }
             }
         }
+
+        int start = __sync_fetch_and_add(&new_frontier->count, count);
+        memcpy(new_frontier->vertices + start, local_set, count * sizeof(int));
+        free(local_set);
     }
 }
 
