@@ -114,6 +114,8 @@ Accumulating into a shared variable can be done by marking the variable as a "re
          mySum += A[i];
      }
 
+![20220125155610](https://picsheep.oss-cn-beijing.aliyuncs.com/pic/20220125155610.png)
+
 ## Part 2: Parallel Breadth-First Search ("Top Down") ##
 
 Breadth-first search (BFS) is a common algorithm that might have seen in a prior algorithms class (See [here](https://www.hackerearth.com/practice/algorithms/graphs/breadth-first-search/tutorial/) and [here](https://www.youtube.com/watch?v=oDqjPvD54Ss) for helpful references.)
@@ -162,6 +164,10 @@ Notice that in some steps of the BFS, the "bottom up" BFS is signficantly faster
 __Tips/Hints:__
 
 * If you used different representations of the frontier in Parts 1.2 and 1.3, you may have to convert between these representations in the hybrid solution.  How might you efficiently convert between them? Is there an overhead in doing so?
+
+I've only gained 55 point, further optimization is needed
+
+![20220125172419](https://picsheep.oss-cn-beijing.aliyuncs.com/pic/20220125172419.png)
 
 ## Grading and Handin ##
 
