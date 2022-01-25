@@ -107,6 +107,36 @@ void bfs_top_down(Graph graph, solution* sol) {
     }
 }
 
+int botton_up_step(
+    Graph g,
+    int* distances,
+    int iteration)
+{
+
+    int global_count = 0;
+
+    #pragma omp parallel for schedule(guided)
+    for (int i=0; i< g->num_nodes; i++) {
+
+        if (distances[i] != NOT_VISITED_MARKER)
+            continue;
+
+        const Vertex *start = incoming_begin(g, i);
+        const Vertex *end = incoming_end(g, i);
+
+        // attempt to add all neighbors to the new frontier
+        for (const Vertex *neighbor = start; neighbor != end; neighbor++) {
+            if (distances[*neighbor] == iteration) {
+                distances[i] = iteration + 1;
+                #pragma omp atomic
+                global_count++;
+            }
+        }
+    }
+
+    return global_count;
+}
+
 void bfs_bottom_up(Graph graph, solution* sol)
 {
     // CS149 students:
@@ -120,6 +150,23 @@ void bfs_bottom_up(Graph graph, solution* sol)
     // As was done in the top-down case, you may wish to organize your
     // code by creating subroutine bottom_up_step() that is called in
     // each step of the BFS process.
+
+    // initialize all nodes to NOT_VISITED
+    for (int i=0; i<graph->num_nodes; i++)
+        sol->distances[i] = NOT_VISITED_MARKER;
+
+    // setup frontier with the root node
+    sol->distances[ROOT_NODE_ID] = 0;
+
+    int iteration = 0;
+    int cnt = 1;
+
+    while (cnt != 0) {
+
+        cnt = botton_up_step(graph, sol->distances, iteration);
+
+        iteration++;
+    }
 }
 
 void bfs_hybrid(Graph graph, solution* sol)
