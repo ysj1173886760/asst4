@@ -58,4 +58,47 @@ void pageRank(Graph g, double* solution, double damping, double convergence)
      }
 
    */
+
+    Vertex *sink_nodes = new int[numNodes];
+    int total_sink_nodes = 0;
+    for (Vertex i = 0; i < numNodes; i++) {
+        if (outgoing_size(g, i) == 0) {
+            sink_nodes[total_sink_nodes++] = i;
+        }
+    }
+
+    double *score_new = new double[numNodes];
+    bool converged = false;
+    double c = (1.0 - damping) / numNodes;
+
+    while (!converged) {
+        double sinkScore = 0.0;
+        #pragma omp parallel for reduction (+:sinkScore) schedule(dynamic, 100)
+        for (int j = 0; j < total_sink_nodes; j++) {
+            sinkScore += solution[sink_nodes[j]];
+        }
+        sinkScore = sinkScore * damping / numNodes;
+
+        #pragma omp parallel for schedule(dynamic, 100)
+        for (int i = 0; i < numNodes; i++) {
+            score_new[i] = 0;
+            const Vertex *start = incoming_begin(g, i);
+            const Vertex *end = incoming_end(g, i);
+            for (const Vertex *v = start; v != end; v++) {
+                score_new[i] += solution[*v] / outgoing_size(g, *v);
+            }
+            score_new[i] = (damping * score_new[i]) + c + sinkScore;
+        }
+
+        double global_diff = 0;
+        #pragma omp parallel for reduction (+:global_diff) schedule(dynamic, 100)
+        for (int i = 0; i < numNodes; i++) {
+            global_diff += abs(score_new[i] - solution[i]);
+            solution[i] = score_new[i];
+        }
+        converged = (global_diff < convergence);
+    }
+
+    free(score_new);
+    free(sink_nodes);
 }
